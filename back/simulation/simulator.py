@@ -4,28 +4,60 @@ import math
 from simulation.models import Auto, Cabina, Evento
 from simulation.config import CONFIG
 
-def generar_llegada():
+def generar_llegada(config=CONFIG):
     rnd = random.random()
-    return -CONFIG["media_llegadas"] * math.log(1 - rnd)
+    return -config["media_llegadas"] * math.log(1 - rnd)
 
-def determinar_tipo_auto():
+def determinar_tipo_auto(config=CONFIG):
     rnd = random.random()
-    for prob, tipo in CONFIG["probabilidades_tipos_autos"]:
-        if rnd < prob:
-            return tipo
-    return 5
+    acumulada = 0
+    for tipo_data in config["tipos_autos"]:
+        acumulada += tipo_data["probabilidad"]
+        if rnd < acumulada:
+            return tipo_data["tipo"]
+    return config["tipos_autos"][-1]["tipo"]  # fallback por seguridad
 
-def tiempo_atencion_por_tipo(tipo):
-    return CONFIG["tiempos_atencion"][tipo]()
 
-def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100):
+def obtener_tiempo_atencion(tipo, config=CONFIG):
+    tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
+    if not tipo_data:
+        raise ValueError(f"Tipo {tipo} no encontrado en configuración")
+    
+    tiempo = tipo_data["tiempo_atencion"]
+
+    if isinstance(tiempo, (int, float)):
+        return tiempo  # Tiempo fijo
+
+    if isinstance(tiempo, list) and len(tiempo) == 2:
+        a, b = tiempo
+        return random.uniform(a, b)  # Uniforme(a, b)
+
+    raise ValueError(f"Tiempos de atención mal definidos para tipo {tipo}: {tiempo}")
+
+
+def obtener_tarifa(tipo, config=CONFIG):
+    tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
+    if not tipo_data:
+        return 0
+    return tipo_data["tarifa"]
+
+def iniciar_atencion(auto, cabina, reloj, eventos, config=CONFIG):
+    cabina.libre = False
+    auto.estado = 'AT'
+    auto.inicio_atencion = reloj
+    duracion = obtener_tiempo_atencion(auto.tipo, config)
+    auto.fin_atencion = reloj + duracion
+    evento_fin = Evento('fin_atencion', auto.fin_atencion, auto, cabina)
+    heapq.heappush(eventos, evento_fin)
+
+def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFIG):
     reloj = 0
     eventos = []
     autos = []
-    cabinas = [Cabina(i + 1) for i in range(CONFIG["max_cabinas"])]
+    cabinas = [Cabina(i + 1) for i in range(config["max_cabinas"])]
     cabinas[0].habilitada = True  # Al menos una al inicio
 
-    heapq.heappush(eventos, Evento('llegada', generar_llegada()))
+    heapq.heappush(eventos, Evento('llegada', generar_llegada(config)))
 
     registros = []
     contador_registros = 0
@@ -51,7 +83,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100):
         max_cabinas = max(max_cabinas, habilitadas)
 
         if evento.tipo == 'llegada':
-            tipo = determinar_tipo_auto()
+            tipo = determinar_tipo_auto(config)
             auto = Auto(len(autos) + 1, reloj, tipo)
             autos.append(auto)
 
@@ -59,7 +91,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100):
 
             # Buscar cabina habilitada con lugar
             for cabina in cabinas:
-                if cabina.habilitada and len(cabina.cola) < CONFIG["max_autos_por_cola"]:
+                if cabina.habilitada and len(cabina.cola) < config["max_autos_por_cola"]:
                     cabina_asignada = cabina
                     break
 
@@ -74,22 +106,22 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100):
             if cabina_asignada is not None:
                 cabina_asignada.cola.append(auto)
                 if cabina_asignada.libre:
-                    iniciar_atencion(auto, cabina_asignada, reloj, eventos)
+                    iniciar_atencion(auto, cabina_asignada, reloj, eventos, config)
                 # Si no está libre, se queda en cola
+
             # Si no hay cabina libre ni puedo habilitar más → auto se pierde (descartado)
 
-            heapq.heappush(eventos, Evento('llegada', reloj + generar_llegada()))
+            heapq.heappush(eventos, Evento('llegada', reloj + generar_llegada(config)))
 
         elif evento.tipo == 'fin_atencion':
             cabina = evento.cabina
             cabina.libre = True
-            monto_recaudado += CONFIG["tarifas_por_tipo"][evento.auto.tipo]
+            monto_recaudado += obtener_tarifa(evento.auto.tipo, config)
 
             if cabina.cola:
                 siguiente_auto = cabina.cola.pop(0)
-                iniciar_atencion(siguiente_auto, cabina, reloj, eventos)
+                iniciar_atencion(siguiente_auto, cabina, reloj, eventos, config)
             else:
-                # Ver si puede apagarse
                 otras_habilitadas = [c for c in cabinas if c != cabina and c.habilitada]
                 if otras_habilitadas:
                     cabina.habilitada = False
@@ -133,12 +165,3 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100):
         "porcentaje_por_cantidad": porcentaje_por_cantidad,
         "max_cabinas": max_cabinas
     }
-
-def iniciar_atencion(auto, cabina, reloj, eventos):
-    cabina.libre = False
-    auto.estado = 'AT'
-    auto.inicio_atencion = reloj
-    duracion = tiempo_atencion_por_tipo(auto.tipo)
-    auto.fin_atencion = reloj + duracion
-    evento_fin = Evento('fin_atencion', auto.fin_atencion, auto, cabina)
-    heapq.heappush(eventos, evento_fin)

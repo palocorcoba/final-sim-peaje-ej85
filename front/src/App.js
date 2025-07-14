@@ -7,17 +7,100 @@ function App() {
   const [datos, setDatos] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [config, setConfig] = useState({
+    media_llegadas: 1.2,
+    prob_tipo1: 0.1,
+    prob_tipo2: 0.5,
+    prob_tipo3: 0.15,
+    prob_tipo4: 0.15,
+    prob_tipo5: 0.1,
+    monto_tipo1: 0,
+    monto_tipo2: 3,
+    monto_tipo3: 6,
+    monto_tipo4: 9,
+    monto_tipo5: 12,
+    tiempo_tipo1: 0.5,
+    tiempo_tipo2_a: 0.75,
+    tiempo_tipo2_b: 0.92,
+    tiempo_tipo3_a: 0.92,
+    tiempo_tipo3_b: 1.42,
+    tiempo_tipo4_a: 1.5,
+    tiempo_tipo4_b: 2.17,
+    tiempo_tipo5_a: 2.5,
+    tiempo_tipo5_b: 3.5,
+  });
+
+  const handleConfigChange = (e) => {
+    const { name, value } = e.target;
+    setConfig((prev) => ({
+      ...prev,
+      [name]: Number(value),
+    }));
+  };
+
   const fetchData = () => {
+
+    const sumaProbabilidades =
+    config.prob_tipo1 +
+    config.prob_tipo2 +
+    config.prob_tipo3 +
+    config.prob_tipo4 +
+    config.prob_tipo5;
+
+  if (Math.abs(sumaProbabilidades - 1) > 0.0001) {
+    alert(
+      `La suma de las probabilidades debe ser 1. Actualmente es ${sumaProbabilidades.toFixed(
+        4
+      )}`
+    );
+    return; // no sigue con la simulación
+  }
+
     setLoading(true);
-    fetch(
-      `http://127.0.0.1:8000/simular?n_iteraciones=${nIter}&desde=${desde}&hasta=${hasta}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
+
+    const params = new URLSearchParams({
+      n_iteraciones: nIter,
+      desde,
+      hasta,
+      media_llegadas: config.media_llegadas,
+      prob_tipo1: config.prob_tipo1,
+      prob_tipo2: config.prob_tipo2,
+      prob_tipo3: config.prob_tipo3,
+      prob_tipo4: config.prob_tipo4,
+      prob_tipo5: config.prob_tipo5,
+      monto_tipo1: config.monto_tipo1,
+      monto_tipo2: config.monto_tipo2,
+      monto_tipo3: config.monto_tipo3,
+      monto_tipo4: config.monto_tipo4,
+      monto_tipo5: config.monto_tipo5,
+      tiempo_tipo1: config.tiempo_tipo1,
+      tiempo_tipo2_a: config.tiempo_tipo2_a,
+      tiempo_tipo2_b: config.tiempo_tipo2_b,
+      tiempo_tipo3_a: config.tiempo_tipo3_a,
+      tiempo_tipo3_b: config.tiempo_tipo3_b,
+      tiempo_tipo4_a: config.tiempo_tipo4_a,
+      tiempo_tipo4_b: config.tiempo_tipo4_b,
+      tiempo_tipo5_a: config.tiempo_tipo5_a,
+      tiempo_tipo5_b: config.tiempo_tipo5_b,
+    });
+
+    fetch(`http://127.0.0.1:8000/simular?${params.toString()}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          alert("Error: " + error.detail);
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
         setDatos(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("Error de red o servidor:", err);
+        alert("Ocurrió un error al conectarse con el servidor.");
+        setLoading(false);
+      });
   };
 
   const thStyle = {
@@ -75,9 +158,6 @@ function App() {
     if (!datos) return null;
 
     const iteraciones = datos.iteraciones || [];
-    // No slice en frontend! Backend ya filtró las iteraciones mostradas.
-    // Solo usamos directamente datos.iteraciones y la última iteración global
-
     const ultimaIteracion = datos.ultima_iteracion;
 
     return (
@@ -120,7 +200,6 @@ function App() {
                 </tr>
               ))}
 
-              {/* Fila última iteración global */}
               {ultimaIteracion && (
                 <tr style={{ background: "#e6ffe6", fontWeight: "bold" }}>
                   <td style={tdStyle}>{ultimaIteracion.numero_iteracion + 1}</td>
@@ -143,6 +222,98 @@ function App() {
       <h1>Simulación Peaje</h1>
 
       <div>
+        <label>
+          Media llegadas:
+          <input
+            type="number"
+            step="0.1"
+            min={0}
+            name="media_llegadas"
+            value={config.media_llegadas}
+            onChange={handleConfigChange}
+          />
+        </label>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <h3>Probabilidades por tipo de auto (deben sumar 1)</h3>
+        {[1, 2, 3, 4, 5].map((tipo) => (
+          <div key={tipo}>
+            <label>
+              Tipo {tipo}:
+              <input
+                type="number"
+                step="0.01"
+                min={0}
+                max={1}
+                name={`prob_tipo${tipo}`}
+                value={config[`prob_tipo${tipo}`]}
+                onChange={handleConfigChange}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <h3>Monto por tipo de auto</h3>
+        {[1, 2, 3, 4, 5].map((tipo) => (
+          <div key={tipo}>
+            <label>
+              Tipo {tipo}:
+              <input
+                type="number"
+                step="1"
+                min={0}
+                name={`monto_tipo${tipo}`}
+                value={config[`monto_tipo${tipo}`]}
+                onChange={handleConfigChange}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <h3>Tiempo de atención por tipo de auto</h3>
+        <div>
+          <label>
+            Tipo 1 (minutos):
+            <input
+              type="number"
+              step="0.01"
+              min={0}
+              name="tiempo_tipo1"
+              value={config.tiempo_tipo1}
+              onChange={handleConfigChange}
+            />
+          </label>
+        </div>
+        {[2, 3, 4, 5].map((tipo) => (
+          <div key={tipo}>
+            <label>
+              Tipo {tipo} (A - B):
+              <input
+                type="number"
+                step="0.01"
+                name={`tiempo_tipo${tipo}_a`}
+                value={config[`tiempo_tipo${tipo}_a`]}
+                onChange={handleConfigChange}
+              />
+              -
+              <input
+                type="number"
+                step="0.01"
+                name={`tiempo_tipo${tipo}_b`}
+                value={config[`tiempo_tipo${tipo}_b`]}
+                onChange={handleConfigChange}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
         <label>
           Iteraciones:
           <input

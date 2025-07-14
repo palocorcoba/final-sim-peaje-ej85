@@ -4,25 +4,24 @@ CONFIG = {
     "media_llegadas": 1.2,
     "max_cabinas": 4,
     "max_autos_por_cola": 4,
-    "probabilidades_tipos_autos": [
-        (0.10, 1),
-        (0.60, 2),
-        (0.75, 3),
-        (0.90, 4),
-        (1.00, 5),
-    ],
-    "tiempos_atencion": {
-        1: lambda: 0.5,  # 30 segundos
-        2: lambda: 0.75 + random.random() * (0.92 - 0.75), #uniforme u(45";55")
-        3: lambda: 0.92 + random.random() * (1.42 - 0.92), #uniforme u(55";85")
-        4: lambda: 1.50 + random.random() * (2.17 - 1.50), #uniforme u(90";130")
-        5: lambda: 2.50 + random.random() * (3.50 - 2.50), #uniforme u(2'30":3'30")
-    },
-        "tarifas_por_tipo": {
-        1: 0,
-        2: 3,
-        3: 6,
-        4: 9,
-        5: 12,
-    }
+    "tipos_autos": [
+        {"tipo": 1, "probabilidad": 0.10, "tiempo_atencion": [0.5], "tarifa": 0},
+        {"tipo": 2, "probabilidad": 0.50, "tiempo_atencion": [0.75, 0.92], "tarifa": 3},
+        {"tipo": 3, "probabilidad": 0.15, "tiempo_atencion": [0.92, 1.42], "tarifa": 6},
+        {"tipo": 4, "probabilidad": 0.15, "tiempo_atencion": [1.50, 2.17], "tarifa": 9},
+        {"tipo": 5, "probabilidad": 0.10, "tiempo_atencion": [2.50, 3.50], "tarifa": 12},
+    ]
 }
+
+def obtener_tiempo_atencion(tipo: int, config=None):
+    if config is None:
+        config = CONFIG
+    tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
+    if not tipo_data:
+        raise ValueError(f"Tipo {tipo} no encontrado")
+
+    tiempo = tipo_data["tiempo_atencion"]
+    if len(tiempo) == 1:
+        return tiempo[0]
+    else:
+        return tiempo[0] + random.random() * (tiempo[1] - tiempo[0])
