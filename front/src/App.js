@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 function App() {
   const [nIter, setNIter] = useState(1000);
-  const [desde, setDesde] = useState(0);
+  const [desde, setDesde] = useState(1);
   const [hasta, setHasta] = useState(100);
   const [datos, setDatos] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,20 +47,45 @@ function App() {
     config.prob_tipo4 +
     config.prob_tipo5;
 
+
+  if (config.media_llegadas <= 0) {
+    alert("La media de llegadas debe ser un número mayor a 0. Por favor, ingresa un valor válido.");
+  return;
+}
+
   if (Math.abs(sumaProbabilidades - 1) > 0.0001) {
     alert(
-      `La suma de las probabilidades debe ser 1. Actualmente es ${sumaProbabilidades.toFixed(
-        4
+      `La suma de las probabilidades para calcular el tipo de auto debe ser 1. Actualmente es ${sumaProbabilidades.toFixed(
+        2
       )}`
     );
     return; // no sigue con la simulación
   }
 
+    // 🚦 Validación A-B para tipo 2, 3, 4, 5
+  const pares = [
+    { tipo: 2, a: config.tiempo_tipo2_a, b: config.tiempo_tipo2_b },
+    { tipo: 3, a: config.tiempo_tipo3_a, b: config.tiempo_tipo3_b },
+    { tipo: 4, a: config.tiempo_tipo4_a, b: config.tiempo_tipo4_b },
+    { tipo: 5, a: config.tiempo_tipo5_a, b: config.tiempo_tipo5_b },
+  ];
+
+  for (const par of pares) {
+    if (par.a > par.b) {
+      alert(
+        `Para el tipo ${par.tipo}, el tiempo mínimo (A) no puede ser mayor que el máximo (B). Corrige los valores.`
+      );
+      return;
+    }
+  }
+
     setLoading(true);
+
+    const desdeIndex = desde > 0 ? desde - 1 : 0;
 
     const params = new URLSearchParams({
       n_iteraciones: nIter,
-      desde,
+      desde: desdeIndex,
       hasta,
       media_llegadas: config.media_llegadas,
       prob_tipo1: config.prob_tipo1,

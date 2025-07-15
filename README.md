@@ -1,4 +1,4 @@
-# Proyecto Final - Simulación de Peaje
+# Final - Simulación de Peaje
 
 **Materia:** Simulación  
 **Alumno:** Paloma Candelaria Corcoba  

@@ -18,7 +18,7 @@ app.add_middleware(
 @app.get("/simular")
 def ejecutar_simulacion(
     n_iteraciones: int = 1000,
-    desde: int = 0,
+    desde: int = 1,
     hasta: int = 100,
     media_llegadas: float = 1.2,
     max_cabinas: int = 4,
