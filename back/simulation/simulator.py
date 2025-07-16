@@ -15,8 +15,7 @@ def determinar_tipo_auto(config=CONFIG):
         acumulada += tipo_data["probabilidad"]
         if rnd < acumulada:
             return tipo_data["tipo"]
-    return config["tipos_autos"][-1]["tipo"]  # fallback por seguridad
-
+    return config["tipos_autos"][-1]["tipo"]
 
 def obtener_tiempo_atencion(tipo, config=CONFIG):
     tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
@@ -24,16 +23,13 @@ def obtener_tiempo_atencion(tipo, config=CONFIG):
         raise ValueError(f"Tipo {tipo} no encontrado en configuración")
     
     tiempo = tipo_data["tiempo_atencion"]
-
     if isinstance(tiempo, (int, float)):
-        return tiempo  # Tiempo fijo
-
+        return tiempo
     if isinstance(tiempo, list) and len(tiempo) == 2:
         a, b = tiempo
-        return random.uniform(a, b)  # Uniforme(a, b)
+        return random.uniform(a, b)
 
     raise ValueError(f"Tiempos de atención mal definidos para tipo {tipo}: {tiempo}")
-
 
 def obtener_tarifa(tipo, config=CONFIG):
     tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
@@ -67,6 +63,8 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
     tiempo_por_cantidad = {}
     max_cabinas = 1
     monto_recaudado = 0
+    monto_recaudado_100 = 0
+    autos_descartados = 0
     reloj_anterior = 0
 
     while contador_registros < n_iteraciones and eventos:
@@ -89,27 +87,31 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
 
             cabina_asignada = None
 
-            # Buscar cabina habilitada con lugar
             for cabina in cabinas:
                 if cabina.habilitada and len(cabina.cola) < config["max_autos_por_cola"]:
                     cabina_asignada = cabina
                     break
 
             if cabina_asignada is None:
-                # Intentar habilitar una nueva
                 for cabina in cabinas:
                     if not cabina.habilitada:
                         cabina.habilitada = True
                         cabina_asignada = cabina
                         break
 
-            if cabina_asignada is not None:
-                cabina_asignada.cola.append(auto)
+            # 🚫 Si no se puede asignar cabina, se descarta el auto
+            if cabina_asignada is None:
+                todas_ocupadas_y_llenas = all(
+                    c.habilitada and not c.libre and len(c.cola) >= config["max_autos_por_cola"]
+                    for c in cabinas
+                )
+                if todas_ocupadas_y_llenas:
+                    autos_descartados += 1
+            else:
                 if cabina_asignada.libre:
                     iniciar_atencion(auto, cabina_asignada, reloj, eventos, config)
-                # Si no está libre, se queda en cola
-
-            # Si no hay cabina libre ni puedo habilitar más → auto se pierde (descartado)
+                else:
+                    cabina_asignada.cola.append(auto)
 
             heapq.heappush(eventos, Evento('llegada', reloj + generar_llegada(config)))
 
@@ -127,16 +129,26 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                     cabina.habilitada = False
 
         if mostrar_desde <= contador_registros < mostrar_hasta:
-            registros.append({
+            registro = {
                 "reloj": reloj,
                 "evento": evento.tipo,
                 "autos": len(autos),
                 "en_sistema": sum(1 for a in autos if a.fin_atencion is None),
                 "cabinas_habilitadas": habilitadas,
+                "autos_descartados": autos_descartados,
                 "numero_iteracion": contador_registros
-            })
+            }
+
+            for i, c in enumerate(cabinas, start=1):
+                registro[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
+                registro[f"cola_c{i}"] = len(c.cola)
+
+            registros.append(registro)
 
         contador_registros += 1
+
+        if reloj == 6000:
+            monto_recaudado_100 = monto_recaudado
 
     ultima_iteracion = None
     if contador_registros > 0:
@@ -146,8 +158,13 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
             "autos": len(autos),
             "en_sistema": sum(1 for a in autos if a.fin_atencion is None),
             "cabinas_habilitadas": habilitadas,
+            "autos_descartados": autos_descartados,
             "numero_iteracion": contador_registros - 1
         }
+
+        for i, c in enumerate(cabinas, start=1):
+            ultima_iteracion[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
+            ultima_iteracion[f"cola_c{i}"] = len(c.cola)
 
     promedio_cabinas = tiempo_cabinas_habilitadas / tiempo_total if tiempo_total > 0 else 0
     porcentaje_por_cantidad = {
@@ -162,6 +179,8 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
         "total_autos": len(autos),
         "promedio_cabinas": promedio_cabinas,
         "monto_recaudado": monto_recaudado,
+        "monto_recaudado_100": monto_recaudado_100,
         "porcentaje_por_cantidad": porcentaje_por_cantidad,
         "max_cabinas": max_cabinas
     }
+

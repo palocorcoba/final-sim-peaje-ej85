@@ -1,5 +1,6 @@
 import random
 
+# Configuración general de la simulación
 CONFIG = {
     "media_llegadas": 1.2,
     "max_cabinas": 4,
