@@ -4,10 +4,12 @@ import math
 from simulation.models import Auto, Cabina, Evento
 from simulation.config import CONFIG
 
+# Genera un tiempo entre llegadas según distribución exponencial negativa con media configurable
 def generar_llegada(config=CONFIG):
     rnd = random.random()
     return -config["media_llegadas"] * math.log(1 - rnd)
 
+# Determina el tipo de auto usando la tabla de probabilidades acumuladas
 def determinar_tipo_auto(config=CONFIG):
     rnd = random.random()
     acumulada = 0
@@ -17,26 +19,34 @@ def determinar_tipo_auto(config=CONFIG):
             return tipo_data["tipo"]
     return config["tipos_autos"][-1]["tipo"]
 
+# Obtiene el tiempo de atención en segundos de acuerdo al tipo de auto
 def obtener_tiempo_atencion(tipo, config=CONFIG):
     tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
     if not tipo_data:
         raise ValueError(f"Tipo {tipo} no encontrado en configuración")
     
     tiempo = tipo_data["tiempo_atencion"]
+    # Si es un valor fijo (por ejemplo, 30 segundos para tipo 1)
     if isinstance(tiempo, (int, float)):
         return tiempo
+    # Si es un rango [a, b], se usa una distribución uniforme
     if isinstance(tiempo, list) and len(tiempo) == 2:
         a, b = tiempo
         return random.uniform(a, b)
 
     raise ValueError(f"Tiempos de atención mal definidos para tipo {tipo}: {tiempo}")
 
+# Devuelve la tarifa (costo del peaje) asociada al tipo de auto
 def obtener_tarifa(tipo, config=CONFIG):
     tipo_data = next((t for t in config["tipos_autos"] if t["tipo"] == tipo), None)
     if not tipo_data:
         return 0
     return tipo_data["tarifa"]
 
+# Inicia la atención de un auto en una cabina:
+# - marca la cabina como ocupada
+# - calcula su duración
+# - programa el evento fin_atencion correspondiente
 def iniciar_atencion(auto, cabina, reloj, eventos, config=CONFIG):
     cabina.libre = False
     auto.estado = 'AT'
@@ -46,6 +56,7 @@ def iniciar_atencion(auto, cabina, reloj, eventos, config=CONFIG):
     evento_fin = Evento('fin_atencion', auto.fin_atencion, auto, cabina)
     heapq.heappush(eventos, evento_fin)
 
+# Función principal de simulación
 def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFIG):
     reloj = 0
     eventos = []
@@ -53,11 +64,13 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
     cabinas = [Cabina(i + 1) for i in range(config["max_cabinas"])]
     cabinas[0].habilitada = True  # Al menos una al inicio
 
+    # Primer evento: llegada de auto inicial
     heapq.heappush(eventos, Evento('llegada', generar_llegada(config)))
 
     registros = []
     contador_registros = 0
 
+    # Variables para métricas de los puntos a, b, c y d
     tiempo_total = 0
     tiempo_cabinas_habilitadas = 0
     tiempo_por_cantidad = {}
@@ -67,19 +80,23 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
     autos_descartados = 0
     reloj_anterior = 0
 
+    # Bucle principal de eventos
     while contador_registros < n_iteraciones and eventos:
         evento = heapq.heappop(eventos)
         reloj = evento.tiempo
 
+        # Calculo del tiempo transcurrido desde el último evento
         delta_t = reloj - reloj_anterior
         reloj_anterior = reloj
 
+        # Actualiza métricas de cabinas habilitadas
         habilitadas = sum(1 for c in cabinas if c.habilitada)
         tiempo_cabinas_habilitadas += habilitadas * delta_t
         tiempo_total += delta_t
         tiempo_por_cantidad[habilitadas] = tiempo_por_cantidad.get(habilitadas, 0) + delta_t
         max_cabinas = max(max_cabinas, habilitadas)
 
+        # Evento de llegada de auto
         if evento.tipo == 'llegada':
             tipo = determinar_tipo_auto(config)
             auto = Auto(len(autos) + 1, reloj, tipo)
@@ -87,11 +104,13 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
 
             cabina_asignada = None
 
+            # Intentar asignar auto a cabina habilitada con espacio en la cola
             for cabina in cabinas:
                 if cabina.habilitada and len(cabina.cola) < config["max_autos_por_cola"]:
                     cabina_asignada = cabina
                     break
 
+            # Si no hay cabina con espacio, se habilita una nueva si es posible
             if cabina_asignada is None:
                 for cabina in cabinas:
                     if not cabina.habilitada:
@@ -99,7 +118,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                         cabina_asignada = cabina
                         break
 
-            # 🚫 Si no se puede asignar cabina, se descarta el auto
+            # Si no se puede asignar cabina, se descarta el auto
             if cabina_asignada is None:
                 todas_ocupadas_y_llenas = all(
                     c.habilitada and not c.libre and len(c.cola) >= config["max_autos_por_cola"]
@@ -108,37 +127,45 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                 if todas_ocupadas_y_llenas:
                     autos_descartados += 1
             else:
+                # Si la cabina está libre, se atiende inmediatamente
                 if cabina_asignada.libre:
                     iniciar_atencion(auto, cabina_asignada, reloj, eventos, config)
                 else:
                     cabina_asignada.cola.append(auto)
-
+            # Se agenda la próxima llegada
             heapq.heappush(eventos, Evento('llegada', reloj + generar_llegada(config)))
 
+        # Evento de fin de atención
         elif evento.tipo == 'fin_atencion':
             cabina = evento.cabina
             cabina.libre = True
+
+            # Se suma la tarifa recaudada
             monto_recaudado += obtener_tarifa(evento.auto.tipo, config)
 
             if cabina.cola:
+                # Si hay autos esperando, se inicia atención al siguiente
                 siguiente_auto = cabina.cola.pop(0)
                 iniciar_atencion(siguiente_auto, cabina, reloj, eventos, config)
             else:
+                # Si la cabina queda vacía y hay otras habilitadas, se deshabilita
                 otras_habilitadas = [c for c in cabinas if c != cabina and c.habilitada]
                 if otras_habilitadas:
                     cabina.habilitada = False
 
+        # Guardar iteraciones dentro del rango a mostrar
         if mostrar_desde <= contador_registros < mostrar_hasta:
             registro = {
                 "reloj": reloj,
                 "evento": evento.tipo,
                 "autos": len(autos),
-                "en_sistema": sum(1 for a in autos if a.fin_atencion is None),
+                "en_sistema": sum(1 for a in autos if a.fin_atencion is None or reloj < a.fin_atencion),
                 "cabinas_habilitadas": habilitadas,
                 "autos_descartados": autos_descartados,
                 "numero_iteracion": contador_registros
             }
 
+            # Estado y cola de cada cabina
             for i, c in enumerate(cabinas, start=1):
                 registro[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
                 registro[f"cola_c{i}"] = len(c.cola)
@@ -147,9 +174,12 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
 
         contador_registros += 1
 
+        # Al llegar a 100 horas (6000 min), guardar monto recaudado parcial
+        # Ver esta logica cuando contesten los profes
         if reloj == 6000:
             monto_recaudado_100 = monto_recaudado
 
+    # Última iteración a mostrar siempre
     ultima_iteracion = None
     if contador_registros > 0:
         ultima_iteracion = {
@@ -166,6 +196,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
             ultima_iteracion[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
             ultima_iteracion[f"cola_c{i}"] = len(c.cola)
 
+    # Cálculos finales para los puntos del enunciado
     promedio_cabinas = tiempo_cabinas_habilitadas / tiempo_total if tiempo_total > 0 else 0
     porcentaje_por_cantidad = {
         k: (v / tiempo_total * 100) if tiempo_total > 0 else 0

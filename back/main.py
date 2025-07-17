@@ -15,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Endpoint principal para ejecutar la simulación
 @app.get("/simular")
 def ejecutar_simulacion(
     n_iteraciones: int = 1000,
@@ -43,6 +44,7 @@ def ejecutar_simulacion(
     tiempo_tipo5_a: float = 2.5,
     tiempo_tipo5_b: float = 3.5,
 ):
+    # Arma la configuración personalizada según lo que manda el frontend
     config_simulacion = {
         "media_llegadas": media_llegadas,
         "max_cabinas": max_cabinas,
@@ -56,6 +58,7 @@ def ejecutar_simulacion(
         ]
     }
 
+    # Ejecuta la simulación y retorna el resultado
     resultado = simular(
         n_iteraciones=n_iteraciones,
         mostrar_desde=desde,
@@ -64,6 +67,7 @@ def ejecutar_simulacion(
     )
     return resultado
 
+# Endpoint para verificar si el backend está corriendo
 @app.get("/ping")
 def ping():
     """
@@ -71,6 +75,7 @@ def ping():
     """
     return {"message": "pong"}
 
+# Devuelve la configuración actual (puede servir al frontend para mostrarla)
 @app.get("/config", response_model=ConfigPeaje)
 def obtener_config():
     return {
@@ -78,6 +83,7 @@ def obtener_config():
         "tipos_autos": CONFIG["tipos_autos"]
     }
 
+# Permite actualizar la configuración de forma dinámica
 @app.post("/config")
 def actualizar_config(nueva_config: ConfigPeaje):
     if len(nueva_config.tipos_autos) != 5:
