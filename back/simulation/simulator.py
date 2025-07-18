@@ -75,10 +75,11 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
     tiempo_cabinas_habilitadas = 0
     tiempo_por_cantidad = {}
     max_cabinas = 1
-    monto_recaudado = 0
+    #monto_recaudado = 0
     monto_recaudado_100 = 0
     autos_descartados = 0
     reloj_anterior = 0
+    llego_a_6000 = False
 
     # Bucle principal de eventos
     while contador_registros < n_iteraciones and eventos:
@@ -140,8 +141,16 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
             cabina = evento.cabina
             cabina.libre = True
 
-            # Se suma la tarifa recaudada
-            monto_recaudado += obtener_tarifa(evento.auto.tipo, config)
+            # Se suma la tarifa recaudada, esto lo hacia antes y acumulaba todo, sin importar el reloj
+            #monto_recaudado += obtener_tarifa(evento.auto.tipo, config)
+
+            #Porfe Carena me contestó al mail y me dijo que de esta forma era lo correcto
+            if reloj <= 6000:
+                tarifa = obtener_tarifa(evento.auto.tipo, config)
+                monto_recaudado_100 += tarifa
+
+            if reloj >= 6000:
+                llego_a_6000 = True
 
             if cabina.cola:
                 # Si hay autos esperando, se inicia atención al siguiente
@@ -176,8 +185,8 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
 
         # Al llegar a 100 horas (6000 min), guardar monto recaudado parcial
         # Ver esta logica cuando contesten los profes
-        if reloj == 6000:
-            monto_recaudado_100 = monto_recaudado
+        #if reloj == 6000:
+         #   monto_recaudado_100 = monto_recaudado
 
     # Última iteración a mostrar siempre
     ultima_iteracion = None
@@ -209,8 +218,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
         "total_iteraciones": n_iteraciones,
         "total_autos": len(autos),
         "promedio_cabinas": promedio_cabinas,
-        "monto_recaudado": monto_recaudado,
-        "monto_recaudado_100": monto_recaudado_100,
+        "monto_recaudado_100": monto_recaudado_100 if llego_a_6000 else 0,
         "porcentaje_por_cantidad": porcentaje_por_cantidad,
         "max_cabinas": max_cabinas
     }

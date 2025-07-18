@@ -159,9 +159,6 @@ function App() {
             {datos.promedio_cabinas.toFixed(2)}
           </p>
           <p>
-            <strong>Monto recaudado:</strong> ${datos.monto_recaudado}
-          </p>
-          <p>
             <strong>Monto recaudo a las 100 horas:</strong> ${datos.monto_recaudado_100}
           </p>
           <p>
