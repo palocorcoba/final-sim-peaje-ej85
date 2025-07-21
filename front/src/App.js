@@ -39,7 +39,6 @@ function App() {
   };
 
   const fetchData = () => {
-
     const sumaProbabilidades =
       config.prob_tipo1 +
       config.prob_tipo2 +
@@ -47,9 +46,10 @@ function App() {
       config.prob_tipo4 +
       config.prob_tipo5;
 
-
     if (config.media_llegadas <= 0) {
-      alert("La media de llegadas debe ser un número mayor a 0. Por favor, ingresa un valor válido.");
+      alert(
+        "La media de llegadas debe ser un número mayor a 0. Por favor, ingresa un valor válido."
+      );
       return;
     }
 
@@ -59,10 +59,10 @@ function App() {
           2
         )}`
       );
-      return; // no sigue con la simulación
+      return;
     }
 
-    // 🚦 Validación A-B para tipo 2, 3, 4, 5
+    // Validación A-B para tipo 2, 3, 4, 5
     const pares = [
       { tipo: 2, a: config.tiempo_tipo2_a, b: config.tiempo_tipo2_b },
       { tipo: 3, a: config.tiempo_tipo3_a, b: config.tiempo_tipo3_b },
@@ -159,7 +159,8 @@ function App() {
             {datos.promedio_cabinas.toFixed(2)}
           </p>
           <p>
-            <strong>Monto recaudo a las 100 horas:</strong> ${datos.monto_recaudado_100}
+            <strong>Monto recaudo a las 100 horas:</strong> $
+            {datos.monto_recaudado_100}
           </p>
           <p>
             <strong>Porcentaje por cantidad de cabinas:</strong>
@@ -179,107 +180,126 @@ function App() {
     );
   };
 
-const renderTablaIteraciones = () => {
-  if (!datos) return null;
+  const renderTablaIteraciones = () => {
+    if (!datos) return null;
 
-  const iteraciones = datos.iteraciones || [];
-  const ultimaIteracion = datos.ultima_iteracion;
+    const iteraciones = datos.iteraciones || [];
+    const ultimaIteracion = datos.ultima_iteracion;
 
-  return (
-    <div style={{ marginTop: 20 }}>
-      <h3>Iteraciones</h3>
-      <div
-        style={{
-          maxHeight: "400px",
-          overflowY: "auto",
-          border: "1px solid #ddd",
-          maxWidth: "100%",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={thStyle}>#</th>
-              <th style={thStyle}>Reloj</th>
-              <th style={thStyle}>Evento</th>
-              <th style={thStyle}>Autos</th>
-              <th style={thStyle}>En sistema</th>
-              <th style={thStyle}>Cabinas habilitadas</th>
-              <th style={thStyle}>Autos descartados</th>
-              {[1, 2, 3, 4].map((i) => (
-                <th key={`estado_c${i}`} style={thStyle}>
-                  Estado C{i}
-                </th>
-              ))}
-              {[1, 2, 3, 4].map((i) => (
-                <th key={`cola_c${i}`} style={thStyle}>
-                  Cola C{i}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {iteraciones.map((item) => (
-              <tr
-                key={item.numero_iteracion}
-                style={{
-                  background:
-                    item.numero_iteracion % 2 === 0 ? "#f2f2f2" : "#fff",
-                }}
-              >
-                <td style={tdStyle}>{item.numero_iteracion + 1}</td>
-                <td style={tdStyle}>{item.reloj.toFixed(2)}</td>
-                <td style={tdStyle}>{item.evento}</td>
-                <td style={tdStyle}>{item.autos}</td>
-                <td style={tdStyle}>{item.en_sistema}</td>
-                <td style={tdStyle}>{item.cabinas_habilitadas}</td>
-                <td style={tdStyle}>{item.autos_descartados}</td>
+    return (
+      <div style={{ marginTop: 20 }}>
+        <h3>Iteraciones</h3>
+        <div
+          style={{
+            maxHeight: "400px",
+            overflowY: "auto",
+            border: "1px solid #ddd",
+            maxWidth: "100%",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>#</th>
+                <th style={thStyle}>Reloj</th>
+                <th style={thStyle}>Evento</th>
+                <th style={thStyle}>Autos</th>
+                <th style={thStyle}>En sistema</th>
+                <th style={thStyle}>Cabinas Habilitadas</th>
+                <th style={thStyle}>Autos Descartados</th>
+                <th style={thStyle}>Tiempo De Atención</th>
+                <th style={thStyle}>Fin de Atencion</th>
                 {[1, 2, 3, 4].map((i) => (
-                  <td key={`estado_c${i}`} style={tdStyle}>
-                    {item[`estado_c${i}`]}
-                  </td>
+                  <th key={`estado_c${i}`} style={thStyle}>
+                    Estado C{i}
+                  </th>
                 ))}
                 {[1, 2, 3, 4].map((i) => (
-                  <td key={`cola_c${i}`} style={tdStyle}>
-                    {item[`cola_c${i}`]}
-                  </td>
+                  <th key={`cola_c${i}`} style={thStyle}>
+                    Cola C{i}
+                  </th>
                 ))}
               </tr>
-            ))}
-
-            {ultimaIteracion && (
-              <tr style={{ background: "#e6ffe6", fontWeight: "bold" }}>
-                <td style={tdStyle}>{ultimaIteracion.numero_iteracion + 1}</td>
-                <td style={tdStyle}>{ultimaIteracion.reloj.toFixed(2)}</td>
-                <td style={tdStyle}>{ultimaIteracion.evento}</td>
-                <td style={tdStyle}>{ultimaIteracion.autos}</td>
-                <td style={tdStyle}>{ultimaIteracion.en_sistema}</td>
-                <td style={tdStyle}>{ultimaIteracion.cabinas_habilitadas}</td>
-                <td style={tdStyle}>{ultimaIteracion.autos_descartados}</td>
-                {[1, 2, 3, 4].map((i) => (
-                  <td key={`estado_c${i}`} style={tdStyle}>
-                    {ultimaIteracion[`estado_c${i}`]}
+            </thead>
+            <tbody>
+              {iteraciones.map((item) => (
+                <tr
+                  key={item.numero_iteracion}
+                  style={{
+                    background:
+                      item.numero_iteracion % 2 === 0 ? "#f2f2f2" : "#fff",
+                  }}
+                >
+                  <td style={tdStyle}>{item.numero_iteracion + 1}</td>
+                  <td style={tdStyle}>{item.reloj.toFixed(2)}</td>
+                  <td style={tdStyle}>{item.evento}</td>
+                  <td style={tdStyle}>{item.autos}</td>
+                  <td style={tdStyle}>{item.en_sistema}</td>
+                  <td style={tdStyle}>{item.cabinas_habilitadas}</td>
+                  <td style={tdStyle}>{item.autos_descartados}</td>
+                  <td style={tdStyle}>
+                    {typeof item.tiempo_estimado_atencion === "number"
+                      ? item.tiempo_estimado_atencion.toFixed(2)
+                      : ""}
                   </td>
-                ))}
-                {[1, 2, 3, 4].map((i) => (
-                  <td key={`cola_c${i}`} style={tdStyle}>
-                    {ultimaIteracion[`cola_c${i}`]}
+                  <td>
+                    {typeof item.fin_real_atencion === "number"
+                      ? item.fin_real_atencion.toFixed(2)
+                      : ""}
                   </td>
-                ))}
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  {[1, 2, 3, 4].map((i) => (
+                    <td key={`estado_c${i}`} style={tdStyle}>
+                      {item[`estado_c${i}`]}
+                    </td>
+                  ))}
+                  {[1, 2, 3, 4].map((i) => (
+                    <td key={`cola_c${i}`} style={tdStyle}>
+                      {item[`cola_c${i}`]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {ultimaIteracion && (
+                <tr style={{ background: "#e6ffe6", fontWeight: "bold" }}>
+                  <td style={tdStyle}>{ultimaIteracion.numero_iteracion + 1}</td>
+                  <td style={tdStyle}>{ultimaIteracion.reloj.toFixed(2)}</td>
+                  <td style={tdStyle}>{ultimaIteracion.evento}</td>
+                  <td style={tdStyle}>{ultimaIteracion.autos}</td>
+                  <td style={tdStyle}>{ultimaIteracion.en_sistema}</td>
+                  <td style={tdStyle}>{ultimaIteracion.cabinas_habilitadas}</td>
+                  <td style={tdStyle}>{ultimaIteracion.autos_descartados}</td>
+                  <td style={tdStyle}>
+                    {typeof ultimaIteracion.tiempo_estimado_atencion === "number"
+                      ? ultimaIteracion.tiempo_estimado_atencion.toFixed(2)
+                      : ""}
+                  </td>
+                  <td style={tdStyle}>
+                    {typeof ultimaIteracion.fin_real_atencion === "number"
+                      ? ultimaIteracion.fin_real_atencion.toFixed(2)
+                      : ""}
+                  </td>
+                  {[1, 2, 3, 4].map((i) => (
+                    <td key={`estado_c${i}`} style={tdStyle}>
+                      {ultimaIteracion[`estado_c${i}`]}
+                    </td>
+                  ))}
+                  {[1, 2, 3, 4].map((i) => (
+                    <td key={`cola_c${i}`} style={tdStyle}>
+                      {ultimaIteracion[`cola_c${i}`]}
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
-};
-
-
+    );
+  };
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Simulación Peaje</h1>
+      <h1>Simulación Peaje UTN</h1>
 
       <div>
         <label>
