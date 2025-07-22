@@ -7,6 +7,7 @@ class Auto:
         self.estado = 'EA'  # Estado inicial: EA = Esperando Atención
         self.inicio_atencion = None  # Reloj en el que comienza la atención
         self.fin_atencion = None     # Reloj en el que finaliza la atención
+        self.cabina_asignada = None  # Se setea cuando el auto entra en atención
 
 # Clase que representa una cabina de peaje
 class Cabina:

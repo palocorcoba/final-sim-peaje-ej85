@@ -210,6 +210,7 @@ function App() {
                 <th style={thStyle}>Autos Descartados</th>
                 <th style={thStyle}>Tiempo De Atención</th>
                 <th style={thStyle}>Fin de Atencion</th>
+                <th style={thStyle}>Atendiendo en cabina...</th>
                 {[1, 2, 3, 4].map((i) => (
                   <th key={`estado_c${i}`} style={thStyle}>
                     Estado C{i}
@@ -249,6 +250,7 @@ function App() {
                       ? item.fin_real_atencion.toFixed(2)
                       : ""}
                   </td>
+                  <td style={tdStyle}>{item.cabina_atendida}</td>
                   {[1, 2, 3, 4].map((i) => (
                     <td key={`estado_c${i}`} style={tdStyle}>
                       {item[`estado_c${i}`]}
@@ -281,6 +283,7 @@ function App() {
                       ? ultimaIteracion.fin_real_atencion.toFixed(2)
                       : ""}
                   </td>
+                  <td style={tdStyle}>{ultimaIteracion.cabina_atendida}</td>
                   {[1, 2, 3, 4].map((i) => (
                     <td key={`estado_c${i}`} style={tdStyle}>
                       {ultimaIteracion[`estado_c${i}`]}
