@@ -203,6 +203,7 @@ function App() {
                 <th style={thStyle}>#</th>
                 <th style={thStyle}>Reloj</th>
                 <th style={thStyle}>Evento</th>
+                <th style={thStyle}>Tipo de Auto</th>
                 <th style={thStyle}>Autos</th>
                 <th style={thStyle}>En sistema</th>
                 <th style={thStyle}>Cabinas Habilitadas</th>
@@ -233,6 +234,7 @@ function App() {
                   <td style={tdStyle}>{item.numero_iteracion + 1}</td>
                   <td style={tdStyle}>{item.reloj.toFixed(2)}</td>
                   <td style={tdStyle}>{item.evento}</td>
+                  <td style={tdStyle}>{item.tipo_auto}</td>
                   <td style={tdStyle}>{item.autos}</td>
                   <td style={tdStyle}>{item.en_sistema}</td>
                   <td style={tdStyle}>{item.cabinas_habilitadas}</td>
@@ -264,6 +266,7 @@ function App() {
                   <td style={tdStyle}>{ultimaIteracion.numero_iteracion + 1}</td>
                   <td style={tdStyle}>{ultimaIteracion.reloj.toFixed(2)}</td>
                   <td style={tdStyle}>{ultimaIteracion.evento}</td>
+                  <td style={tdStyle}>{ultimaIteracion.tipo_auto}</td>
                   <td style={tdStyle}>{ultimaIteracion.autos}</td>
                   <td style={tdStyle}>{ultimaIteracion.en_sistema}</td>
                   <td style={tdStyle}>{ultimaIteracion.cabinas_habilitadas}</td>

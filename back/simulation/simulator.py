@@ -4,6 +4,13 @@ import math
 from simulation.models import Auto, Cabina, Evento
 from simulation.config import CONFIG
 
+def describir_evento(evento, auto=None):
+    if evento.tipo in ('llegada', 'fin_atencion', 'inicio_atencion'):
+        id_auto = (auto.id if auto is not None else
+                   evento.auto.id if evento.auto is not None else None)
+        return f"{evento.tipo} auto {id_auto}" if id_auto is not None else evento.tipo
+    return evento.tipo
+
 def generar_llegada(config=CONFIG):
     rnd = random.random()
     return -config["media_llegadas"] * math.log(1 - rnd)
@@ -165,14 +172,9 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
 
             auto = evento.auto
 
-        if mostrar_desde <= contador_registros < mostrar_hasta:
-            if evento.tipo == 'llegada':
-                evento_str = f"llegada auto {auto.id}"
-            elif evento.tipo == 'fin_atencion':
-                evento_str = f"fin_atencion auto {evento.auto.id}"
-            else:
-                evento_str = evento.tipo
+        evento_str = describir_evento(evento, auto)
 
+        if mostrar_desde <= contador_registros < mostrar_hasta:
             registro = {
                 "reloj": reloj,
                 "evento": evento_str,
@@ -185,30 +187,38 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                 "numero_iteracion": contador_registros
             }
 
+            if evento.tipo == 'llegada' and auto is not None:
+                registro["tipo_auto"] = auto.tipo
+
             for i, c in enumerate(cabinas, start=1):
                 registro[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
                 registro[f"cola_c{i}"] = len(c.cola)
-                registro[f"habilitada_c{i}"] = c.habilitada
-
             registros.append(registro)
 
         contador_registros += 1
 
     ultima_iteracion = None
     if contador_registros > 0:
+        evento_str = describir_evento(evento, auto)
         ultima_iteracion = {
             "reloj": reloj,
-            "evento": evento.tipo,
+            "evento": evento_str,
             "autos": len(autos),
             "en_sistema": sum(1 for a in autos if a.fin_atencion is None or reloj < a.fin_atencion),
             "cabinas_habilitadas": habilitadas,
             "autos_descartados": autos_descartados,
             "numero_iteracion": contador_registros - 1
         }
+
+        if evento.tipo == 'llegada' and auto is not None:
+            ultima_iteracion["tipo_auto"] = auto.tipo
+            ultima_iteracion["tiempo_estimado_atencion"] = auto.tiempo_atencion
+            if auto.fin_atencion:
+                ultima_iteracion["fin_real_atencion"] = auto.fin_atencion
+
         for i, c in enumerate(cabinas, start=1):
             ultima_iteracion[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
             ultima_iteracion[f"cola_c{i}"] = len(c.cola)
-            ultima_iteracion[f"habilitada_c{i}"] = c.habilitada
 
     promedio_cabinas = tiempo_cabinas_habilitadas / tiempo_total if tiempo_total > 0 else 0
     porcentaje_por_cantidad = {
