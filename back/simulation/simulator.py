@@ -236,24 +236,36 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
             "reloj": reloj,
             "evento": evento_str,
             "autos": len(autos),
-            "en_sistema": sum((1 for c in cabinas if c.habilitada for _ in c.cola)) + sum((1 for c in cabinas if c.habilitada and not c.libre)),
+            "en_sistema": sum(
+                (1 for c in cabinas if c.habilitada for _ in c.cola)
+            ) + sum((1 for c in cabinas if c.habilitada and not c.libre)),
             "cabinas_habilitadas": habilitadas,
             "autos_descartados": autos_descartados,
             "numero_iteracion": contador_registros - 1,
-            "tiempo_estimado_atencion": auto.tiempo_atencion,
-            "fin_real_atencion": auto.fin_atencion,
-            "cabina_atendida": auto.cabina_asignada,
         }
 
+        # Datos particulares según tipo de evento
         if evento.tipo == 'llegada' and auto is not None:
             ultima_iteracion["tipo_auto"] = auto.tipo
             ultima_iteracion["tiempo_estimado_atencion"] = auto.tiempo_atencion
             if auto.fin_atencion:
                 ultima_iteracion["fin_real_atencion"] = auto.fin_atencion
+            ultima_iteracion["cabina_atendida"] = None
 
+        elif evento.tipo == 'inicio_atencion' and auto is not None:
+            ultima_iteracion["tiempo_estimado_atencion"] = auto.tiempo_atencion
+            ultima_iteracion["fin_real_atencion"] = auto.fin_atencion
+            ultima_iteracion["cabina_atendida"] = auto.cabina_asignada
+
+        elif evento.tipo == 'fin_atencion' and auto is not None:
+            # No se agregan datos de tiempo ni cabina porque ya terminó la atención
+            pass
+
+        # Estados y colas de cabinas
         for i, c in enumerate(cabinas, start=1):
             ultima_iteracion[f"estado_c{i}"] = "libre" if c.libre else "ocupado"
             ultima_iteracion[f"cola_c{i}"] = len(c.cola)
+            ultima_iteracion[f"habilitada_c{i}"] = c.habilitada
 
     # Calcular métricas finales
     promedio_cabinas = tiempo_cabinas_habilitadas / tiempo_total if tiempo_total > 0 else 0
