@@ -186,7 +186,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                     "reloj": reloj,
                     "evento": f"inicio_atencion auto {auto.id}",
                     "autos": len(autos),
-                    "en_sistema": sum(1 for a in autos if a.fin_atencion is None or reloj < a.fin_atencion),
+                    "en_sistema": sum((1 for c in cabinas if c.habilitada for _ in c.cola)) + sum((1 for c in cabinas if c.habilitada and not c.libre)),
                     "cabinas_habilitadas": habilitadas,
                     "autos_descartados": autos_descartados,
                     "tiempo_estimado_atencion": auto.tiempo_atencion,
@@ -209,7 +209,7 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
                     "reloj": reloj,
                     "evento": evento_str,
                     "autos": len(autos),
-                    "en_sistema": sum(1 for a in autos if a.fin_atencion is None or reloj < a.fin_atencion),
+                    "en_sistema": sum((1 for c in cabinas if c.habilitada for _ in c.cola)) + sum((1 for c in cabinas if c.habilitada and not c.libre)),
                     "cabinas_habilitadas": habilitadas,
                     "autos_descartados": autos_descartados,
                     "tiempo_estimado_atencion": tiempo_aten if evento.tipo == 'llegada' else None,
@@ -236,10 +236,13 @@ def simular(n_iteraciones=1000, mostrar_desde=0, mostrar_hasta=100, config=CONFI
             "reloj": reloj,
             "evento": evento_str,
             "autos": len(autos),
-            "en_sistema": sum(1 for a in autos if a.fin_atencion is None or reloj < a.fin_atencion),
+            "en_sistema": sum((1 for c in cabinas if c.habilitada for _ in c.cola)) + sum((1 for c in cabinas if c.habilitada and not c.libre)),
             "cabinas_habilitadas": habilitadas,
             "autos_descartados": autos_descartados,
-            "numero_iteracion": contador_registros - 1
+            "numero_iteracion": contador_registros - 1,
+            "tiempo_estimado_atencion": auto.tiempo_atencion,
+            "fin_real_atencion": auto.fin_atencion,
+            "cabina_atendida": auto.cabina_asignada,
         }
 
         if evento.tipo == 'llegada' and auto is not None:

@@ -155,15 +155,15 @@ function App() {
           }}
         >
           <p>
-            <strong>Promedio de cabinas habilitadas:</strong>{" "}
+            <strong>A) Promedio de cabinas habilitadas en función del tiempo:</strong>{" "}
             {datos.promedio_cabinas.toFixed(2)}
           </p>
           <p>
-            <strong>Monto recaudo a las 100 horas:</strong> $
+            <strong>B) Monto recaudo a las 100 horas (solo si se llega a las 100hs):</strong> $
             {datos.monto_recaudado_100}
           </p>
           <p>
-            <strong>Porcentaje por cantidad de cabinas:</strong>
+            <strong>C) Porcentaje por cantidad de cabinas:</strong>
           </p>
           <ul>
             {Object.entries(datos.porcentaje_por_cantidad).map(([key, val]) => (
@@ -173,7 +173,7 @@ function App() {
             ))}
           </ul>
           <p>
-            <strong>Máximo de cabinas habilitadas:</strong> {datos.max_cabinas}
+            <strong>D) Máximo de cabinas habilitadas:</strong> {datos.max_cabinas}
           </p>
         </div>
       </div>
